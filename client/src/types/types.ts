@@ -270,3 +270,94 @@ export interface RaffleEndedEvent {
     totalTicketsSold: number;
     prizeAmount: string;
 }
+
+// ============================================
+// BACKEND API RESPONSE TYPES
+// ============================================
+
+/** Raffle list item from GET /raffles (indexer contract data, snake_case) */
+export interface ApiRaffleListItem {
+    id: number;
+    creator: string;
+    status: string;
+    ticket_price: string;
+    asset: string;
+    max_tickets: number;
+    tickets_sold: number;
+    end_time: string;
+    winner: string | null;
+    prize_amount: string | null;
+    created_ledger: number;
+    finalized_ledger: number | null;
+    metadata_cid: string | null;
+    created_at: string;
+    participant_count?: number;
+}
+
+/** Response from GET /raffles */
+export interface ApiRaffleListResponse {
+    raffles: ApiRaffleListItem[];
+    total?: number;
+}
+
+/** Raffle detail from GET /raffles/:id (contract data + off-chain metadata merged) */
+export interface ApiRaffleDetail extends ApiRaffleListItem {
+    title?: string;
+    description?: string;
+    image_url?: string | null;
+    category?: string | null;
+}
+
+/** Query filters for GET /raffles */
+export interface RaffleListFilters {
+    status?: string;
+    category?: string;
+    creator?: string;
+    asset?: string;
+    limit?: number;
+    offset?: number;
+}
+
+/** Formatted raffle object used by UI components */
+export interface FormattedRaffle {
+    id: number;
+    creator: string;
+    description: string;
+    endTime: number;
+    maxTickets: number;
+    allowMultipleTickets: boolean;
+    ticketPrice: string;
+    ticketToken: string | undefined;
+    totalTicketsSold: number;
+    winner: string | null;
+    winningTicketId: number;
+    isActive: boolean;
+    isFinalized: boolean;
+    winningsWithdrawn: boolean;
+    countdown: {
+        days: string;
+        hours: string;
+        minutes: string;
+        seconds: string;
+    };
+    progress: number;
+    entries: number;
+    ticketPriceFormatted: string;
+    prizeValue: string;
+    prizeCurrency: string;
+    buttonText: string;
+    image: string;
+    metadata: {
+        title: string;
+        description: string;
+        image: string;
+        prizeName: string;
+        prizeValue: string;
+        prizeCurrency: string;
+        category: string;
+        tags: string[];
+        createdBy: string;
+        createdAt: number;
+        updatedAt: number;
+    };
+}
