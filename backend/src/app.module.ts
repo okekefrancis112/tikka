@@ -8,11 +8,13 @@ import { RafflesModule } from "./api/rest/raffles/raffles.module";
 import { UsersModule } from "./api/rest/users/users.module";
 import { LeaderboardModule } from "./api/rest/leaderboard/leaderboard.module";
 import { StatsModule } from "./api/rest/stats/stats.module";
+import { HealthModule } from "./health/health.module";
 import { TikkaThrottlerGuard } from "./middleware/throttler.guard";
+import { validate } from "./config/env.schema";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, validate }),
 
     /**
      * Named throttler tiers — each applied by the TikkaThrottlerGuard.
@@ -57,6 +59,7 @@ import { TikkaThrottlerGuard } from "./middleware/throttler.guard";
     UsersModule,
     LeaderboardModule,
     StatsModule,
+    HealthModule,
   ],
   providers: [
     // 1. JWT guard first — authenticates the request (sets req.user)

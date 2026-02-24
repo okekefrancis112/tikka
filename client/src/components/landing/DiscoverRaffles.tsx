@@ -1,11 +1,11 @@
 import { Eye } from "lucide-react";
 import TrendingRaffles from "./TrendingRaffles";
-import { useActiveRaffles } from "../../hooks/useRaffles";
+import { useRaffles } from "../../hooks/useRaffles";
 import RaffleCardSkeleton from "../ui/RaffleCardSkeleton";
 import ErrorMessage from "../ui/ErrorMessage";
 
 const DiscoverRaffles = () => {
-    const { raffles, error, isLoading } = useActiveRaffles();
+    const { raffles, error, isLoading } = useRaffles({ status: "open" });
 
     return (
         <section className="w-full">
@@ -53,7 +53,7 @@ const DiscoverRaffles = () => {
                             </div>
                         </div>
                     ) : (
-                        <TrendingRaffles raffleIds={raffles} />
+                        <TrendingRaffles raffleIds={raffles.map((r) => r.id)} />
                     )}
                 </div>
             </div>
