@@ -2,6 +2,8 @@ import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { demoRaffles } from "../data/demoRaffles";
 import { useRaffle } from "../hooks/useRaffles";
+import RaffleCardSkeleton from "../components/ui/RaffleCardSkeleton";
+import ErrorMessage from "../components/ui/ErrorMessage";
 
 const MyRaffles: React.FC = () => {
     const [activeTab, setActiveTab] = useState("created");
@@ -113,26 +115,17 @@ const RaffleCardWrapper: React.FC<{
     const { raffle, error, isLoading } = useRaffle(raffleId);
 
     if (isLoading) {
-        return (
-            <div className="bg-[#1E1932] rounded-xl p-6 animate-pulse">
-                <div className="w-full h-48 bg-gray-700 rounded-lg mb-4"></div>
-                <div className="h-6 bg-gray-700 rounded mb-2"></div>
-                <div className="space-y-2 mb-4">
-                    <div className="h-4 bg-gray-700 rounded"></div>
-                    <div className="h-4 bg-gray-700 rounded"></div>
-                    <div className="h-4 bg-gray-700 rounded"></div>
-                </div>
-                <div className="h-10 bg-gray-700 rounded"></div>
-            </div>
-        );
+        return <RaffleCardSkeleton bgColor="bg-[#1E1932]" rounded="rounded-xl" />;
     }
 
     if (error || !raffle) {
         return (
             <div className="bg-[#1E1932] rounded-xl p-6">
-                <div className="text-red-400 text-center">
-                    Error loading raffle
-                </div>
+                <ErrorMessage
+                    variant="inline"
+                    title="Error loading raffle"
+                    message={error?.message}
+                />
             </div>
         );
     }

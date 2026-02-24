@@ -3,22 +3,16 @@ import { useRaffle } from "../hooks/useRaffles";
 import RaffleDetailsCard from "../components/cards/RaffleDetailsCard";
 import ShareRaffle from "../components/ShareRaffle";
 import VerifiedBadge from "../components/VerifiedBadge";
+import ErrorMessage from "../components/ui/ErrorMessage";
 import detailimage from "../assets/detailimage.png";
 
 const RaffleDetails = () => {
     const [searchParams] = useSearchParams();
     const raffleId = searchParams.get("raffle");
 
-    console.log("🔍 RaffleDetails - URL raffle ID:", raffleId);
-
-    // Fetch raffle data using the ID from URL
     const { raffle, error, isLoading } = useRaffle(
         raffleId ? parseInt(raffleId) : 0
     );
-
-    console.log("🔍 RaffleDetails - Fetched raffle data:", raffle);
-    console.log("🔍 RaffleDetails - Error:", error);
-    console.log("🔍 RaffleDetails - Loading:", isLoading);
 
     if (isLoading) {
         return (
@@ -38,18 +32,15 @@ const RaffleDetails = () => {
     if (error || !raffle) {
         return (
             <div className="w-full mx-auto max-w-7xl px-6 md:px-12 lg:px-16 flex flex-col">
-                <div className="bg-[#11172E] p-8 rounded-3xl text-center">
-                    <h2 className="text-2xl font-bold text-white mb-4">
-                        Raffle Not Found
-                    </h2>
-                    <p className="text-gray-400 mb-4">
-                        {error
-                            ? error.message
-                            : "The raffle you're looking for doesn't exist."}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                        Raffle ID: {raffleId || "Not provided"}
-                    </p>
+                <div className="bg-[#11172E] p-8 rounded-3xl">
+                    <ErrorMessage
+                        title="Raffle Not Found"
+                        message={
+                            error
+                                ? error.message
+                                : "The raffle you're looking for doesn't exist."
+                        }
+                    />
                 </div>
             </div>
         );
