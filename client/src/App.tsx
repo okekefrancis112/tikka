@@ -5,6 +5,7 @@ import CreateRaffle from "./pages/CreateRaffle";
 import Leaderboard from "./pages/Leaderboard";
 import MyRaffles from "./pages/MyRaffles";
 import WinnerDemo from "./pages/WinnerDemo";
+import Settings from "./pages/Settings";
 
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import RaffleDetails from "./pages/RaffleDetails";
@@ -37,6 +38,7 @@ function App() {
                         <Route path="leaderboard" element={<Leaderboard />} />
                         <Route path="my-raffles" element={<MyRaffles />} />
                         <Route path="winner-demo" element={<WinnerDemo />} />
+                        <Route path="settings" element={<Settings />} />
                     </Route>
 
                     {/* <Route path="/game" element={<GameLayout />}>
