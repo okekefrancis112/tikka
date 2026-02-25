@@ -75,8 +75,7 @@ export class LedgerPollerService implements OnModuleInit, OnModuleDestroy {
     const startLedger = cursor ? cursor.lastLedger + 1 : undefined;
 
     // 2. Build the request parameters
-    const request: rpc.GetEventsRequest = {
-      startLedger,
+    const request: any = {
       filters: [
         {
           type: "contract",
@@ -87,7 +86,9 @@ export class LedgerPollerService implements OnModuleInit, OnModuleDestroy {
     };
 
     if (cursor?.lastPagingToken) {
-      request.pagination = { cursor: cursor.lastPagingToken };
+      request.cursor = cursor.lastPagingToken;
+    } else {
+      request.startLedger = startLedger;
     }
 
     // 3. Fetch events from RPC
@@ -107,8 +108,8 @@ export class LedgerPollerService implements OnModuleInit, OnModuleDestroy {
     for (const rawEvent of response.events) {
       const parsedEvent = this.eventParser.parse({
         type: rawEvent.type,
-        topics: rawEvent.topic,
-        value: rawEvent.value,
+        topics: rawEvent.topic.map((t) => t.toXDR("base64")),
+        value: rawEvent.value.toXDR("base64"),
       });
 
       if (parsedEvent) {
@@ -125,7 +126,7 @@ export class LedgerPollerService implements OnModuleInit, OnModuleDestroy {
         highestLedgerProcessed,
         rawEvent.ledger,
       );
-      lastPagingToken = rawEvent.pagingToken;
+      lastPagingToken = (rawEvent as any).pagingToken || lastPagingToken;
     }
 
     // 5. Save the updated cursor after the batch is processed successfully
