@@ -13,6 +13,7 @@ async function bootstrap() {
     new FastifyAdapter(),
   );
 
+  // @ts-ignore - Type discrepancy between NestJS fastify types and fastify-multipart v9
   await app.register(multipart, {
     limits: {
       fileSize: MAX_UPLOAD_BYTES,
