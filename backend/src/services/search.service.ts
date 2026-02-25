@@ -11,17 +11,21 @@ export class SearchService {
   ) {}
 
   async search(query: string): Promise<Raffle[]> {
+    // Clean and prepare the query
     const formattedQuery = query
       .trim()
       .split(/\s+/)
       .map(term => `${term}:*`)
       .join(' & ');
 
-    // We use a simpler query first to ensure it works
     return await this.raffleRepository
       .createQueryBuilder('raffle')
       .where(
-        `to_tsvector('english', coalesce(raffle.title, '') || ' ' || coalesce(raffle.description, '')) @@ to_tsquery('english', :q)`,
+        `to_tsvector('english', 
+            coalesce(raffle.title, '') || ' ' || 
+            coalesce(raffle.description, '') || ' ' || 
+            coalesce(raffle.category, '')
+        ) @@ to_tsquery('english', :q)`,
         { q: formattedQuery }
       )
       .getMany();
