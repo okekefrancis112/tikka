@@ -17,6 +17,7 @@ const Navbar = ({ onStart }: { onStart?: () => void }) => {
         { label: "Create Raffle", href: "/create" },
         { label: "My Raffles", href: "/my-raffles" },
         { label: "Leaderboard", href: "/leaderboard" },
+        { label: "Settings", href: "/settings" },
     ];
 
     const targetNetwork = STELLAR_CONFIG.network.charAt(0).toUpperCase() + STELLAR_CONFIG.network.slice(1);
