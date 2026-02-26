@@ -5,15 +5,38 @@ import {
   NotificationSubscription,
 } from '../../../services/notification.service';
 
+/** API response format (camelCase for frontend) */
+export interface SubscriptionResponse {
+  id: string;
+  raffleId: number;
+  userAddress: string;
+  channel: string;
+  createdAt: string;
+}
+
 @Injectable()
 export class NotificationsService {
   constructor(private readonly notificationService: NotificationService) {}
 
   /**
+   * Transform database record to API response format
+   */
+  private toResponse(sub: NotificationSubscription): SubscriptionResponse {
+    return {
+      id: sub.id,
+      raffleId: sub.raffle_id,
+      userAddress: sub.user_address,
+      channel: sub.channel,
+      createdAt: sub.created_at,
+    };
+  }
+
+  /**
    * Subscribe user to raffle notifications
    */
-  async subscribe(payload: CreateSubscriptionPayload): Promise<NotificationSubscription> {
-    return this.notificationService.subscribe(payload);
+  async subscribe(payload: CreateSubscriptionPayload): Promise<SubscriptionResponse> {
+    const subscription = await this.notificationService.subscribe(payload);
+    return this.toResponse(subscription);
   }
 
   /**
@@ -26,8 +49,9 @@ export class NotificationsService {
   /**
    * Get all subscriptions for a user
    */
-  async getUserSubscriptions(userAddress: string): Promise<NotificationSubscription[]> {
-    return this.notificationService.getUserSubscriptions(userAddress);
+  async getUserSubscriptions(userAddress: string): Promise<SubscriptionResponse[]> {
+    const subscriptions = await this.notificationService.getUserSubscriptions(userAddress);
+    return subscriptions.map(sub => this.toResponse(sub));
   }
 
   /**
