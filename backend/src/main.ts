@@ -13,6 +13,7 @@ async function bootstrap() {
     new FastifyAdapter(),
   );
 
+  // Using 'as any' bypasses the type mismatch error between Fastify versions
   await app.register(multipart as any, {
     limits: {
       fileSize: MAX_UPLOAD_BYTES,

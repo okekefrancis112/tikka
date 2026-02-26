@@ -6,8 +6,10 @@ import { VrfService } from '../randomness/vrf.service';
 import { PrngService } from '../randomness/prng.service';
 import { CommitmentService } from '../randomness/commitment.service';
 import { TxSubmitterService } from '../submitter/tx-submitter.service';
+import { HealthModule } from '../health/health.module';
 
 @Module({
+  imports: [HealthModule],
   providers: [
     RandomnessWorker,
     CommitRevealWorker,
@@ -19,4 +21,4 @@ import { TxSubmitterService } from '../submitter/tx-submitter.service';
   ],
   exports: [RandomnessWorker, CommitRevealWorker],
 })
-export class QueueModule {}
+export class QueueModule { }

@@ -4,6 +4,8 @@ import { ContractService } from '../contract/contract.service';
 import { VrfService } from '../randomness/vrf.service';
 import { PrngService } from '../randomness/prng.service';
 import { TxSubmitterService } from '../submitter/tx-submitter.service';
+import { HealthService } from '../health/health.service';
+import { LagMonitorService } from '../health/lag-monitor.service';
 
 @Injectable()
 export class RandomnessWorker {
@@ -16,7 +18,9 @@ export class RandomnessWorker {
     private readonly vrfService: VrfService,
     private readonly prngService: PrngService,
     private readonly txSubmitter: TxSubmitterService,
-  ) {}
+    private readonly healthService: HealthService,
+    private readonly lagMonitor: LagMonitorService,
+  ) { }
 
   /**
    * Processes a randomness request from the queue
@@ -25,7 +29,7 @@ export class RandomnessWorker {
    */
   async processRequest(job: RandomnessRequest): Promise<void> {
     const { raffleId, requestId, prizeAmount } = job;
-    
+
     this.logger.log(`Processing randomness request for raffle ${raffleId}, request ${requestId}`);
 
     try {
@@ -59,12 +63,14 @@ export class RandomnessWorker {
 
       // Step 6: Submit to contract
       const result = await this.txSubmitter.submitRandomness(raffleId, randomness);
-      
+
       if (result.success) {
         this.logger.log(
           `Successfully submitted randomness for raffle ${raffleId}: tx=${result.txHash}, ledger=${result.ledger}`,
         );
         this.processedRequests.add(requestId);
+        this.healthService.recordSuccess(requestId);
+        this.lagMonitor.fulfillRequest(requestId);
       } else {
         throw new Error(`Transaction submission failed for raffle ${raffleId}`);
       }
@@ -73,6 +79,7 @@ export class RandomnessWorker {
         `Failed to process randomness request for raffle ${raffleId}: ${error.message}`,
         error.stack,
       );
+      this.healthService.recordFailure(requestId, raffleId, error.message);
       throw error; // Re-throw to trigger retry mechanism
     }
   }
