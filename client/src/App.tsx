@@ -39,6 +39,7 @@ function App() {
                         <Route path="leaderboard" element={<Leaderboard />} />
                         <Route path="my-raffles" element={<MyRaffles />} />
                         <Route path="winner-demo" element={<WinnerDemo />} />
+                        <Route path="settings" element={<Settings />} />
                     </Route>
                 </Routes>
             </Router>
