@@ -69,16 +69,58 @@ export class RaffleProcessor {
     await this.cacheService.invalidateLeaderboard();
   }
 
-  /**
-   * Called when a RaffleCancelled event is indexed.
-   * Invalidates raffle detail and active raffles list.
-   */
-  async handleRaffleCancelled(raffleId: string) {
+  async handleRaffleCancelled(
+    raffleId: number,
+    reason: string,
+    ledger: number,
+    txHash: string,
+  ) {
     this.logger.log(`Handling RaffleCancelled for ${raffleId}`);
-    // DB write logic would go here
+    const queryRunner = this.dataSource.createQueryRunner();
 
-    // Invalidate caches
-    await this.cacheService.invalidateRaffleDetail(raffleId);
-    await this.cacheService.invalidateActiveRaffles();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await queryRunner.manager
+        .createQueryBuilder()
+        .insert()
+        .into(RaffleEventEntity)
+        .values({
+          raffleId,
+          eventType: "RaffleCancelled",
+          ledger,
+          txHash,
+          payloadJson: {
+            raffle_id: raffleId,
+            reason,
+          },
+        })
+        .orIgnore()
+        .execute();
+
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(RaffleEntity)
+        .set({
+          status: RaffleStatus.CANCELLED,
+          finalizedLedger: ledger,
+        })
+        .where("id = :raffleId", { raffleId })
+        .execute();
+
+      await queryRunner.commitTransaction();
+      await this.cacheService.invalidateRaffleDetail(raffleId.toString());
+      await this.cacheService.invalidateActiveRaffles();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(
+        `Error processing RaffleCancelled for txHash ${txHash}`,
+        error as any,
+      );
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }
