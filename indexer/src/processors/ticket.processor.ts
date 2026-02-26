@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import { TicketEntity } from "../database/entities/ticket.entity";
 import { RaffleEntity } from "../database/entities/raffle.entity";
 import { CacheService } from "../cache/cache.service";
+import { UserProcessor } from "./user.processor";
 
 @Injectable()
 export class TicketProcessor {
@@ -11,6 +12,7 @@ export class TicketProcessor {
   constructor(
     private dataSource: DataSource,
     private cacheService: CacheService,
+    private userProcessor: UserProcessor,
   ) {}
 
   /**
@@ -63,6 +65,14 @@ export class TicketProcessor {
         })
         .where("id = :raffleId", { raffleId })
         .execute();
+
+      await this.userProcessor.handleTicketPurchased(
+        raffleId,
+        buyer,
+        ledger,
+        txHash,
+        queryRunner,
+      );
 
       await queryRunner.commitTransaction();
 

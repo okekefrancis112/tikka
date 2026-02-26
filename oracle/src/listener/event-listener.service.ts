@@ -6,6 +6,9 @@ import { RandomnessWorker } from '../queue/randomness.worker';
 import { RandomnessRequest } from '../queue/queue.types';
 import { HealthService } from '../health/health.service';
 import { LagMonitorService } from '../health/lag-monitor.service';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
+import { RANDOMNESS_QUEUE, RandomnessJobPayload } from '../queue/randomness.queue';
 
 @Injectable()
 export class EventListenerService implements OnModuleInit, OnModuleDestroy {
@@ -20,16 +23,14 @@ export class EventListenerService implements OnModuleInit, OnModuleDestroy {
     private readonly MAX_RETRY_DELAY = 60000; // 1 minute
     private readonly INITIAL_RETRY_DELAY = 1000; // 1 second
 
-    // In-memory queue using RxJS Subject
-    private readonly requestQueue = new Subject<RandomnessRequest>();
-    private queueSubscription: Subscription | null = null;
+    // Bull queue depth (approximate)
     private currentQueueDepth = 0;
 
     constructor(
         private readonly configService: ConfigService,
-        private readonly randomnessWorker: RandomnessWorker,
         private readonly healthService: HealthService,
         private readonly lagMonitor: LagMonitorService,
+        @InjectQueue(RANDOMNESS_QUEUE) private readonly randomnessQueue: Queue<RandomnessJobPayload>,
     ) {
         // Config parsing
         const horizonUrl = this.configService.get<string>('HORIZON_URL', 'https://horizon-testnet.stellar.org');
@@ -46,34 +47,6 @@ export class EventListenerService implements OnModuleInit, OnModuleDestroy {
     onModuleInit() {
         this.logger.log(`Initializing EventListenerService against contract: ${this.raffleContractId}`);
 
-        // Subscribe to the Subject queue with the worker processor
-        this.queueSubscription = this.requestQueue.subscribe({
-            next: async (job) => {
-                const MAX_RETRIES = 5;
-                let attempt = 0;
-                let success = false;
-
-                while (attempt < MAX_RETRIES && !success) {
-                    try {
-                        attempt++;
-                        // Enqueue job to worker
-                        await this.randomnessWorker.processRequest(job);
-                        success = true;
-                    } catch (error) {
-                        this.logger.error(`Error processing randomness request from queue (attempt ${attempt}/${MAX_RETRIES}): ${error}`);
-                        if (attempt < MAX_RETRIES) {
-                            // Wait before retry
-                            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
-                        }
-                    }
-                }
-
-                this.currentQueueDepth--;
-                this.healthService.updateQueueDepth(this.currentQueueDepth);
-            },
-            error: (err) => this.logger.error('Request Queue Subscription Error', err),
-        });
-
         // Start SSE stream
         this.startListening();
     }
@@ -86,10 +59,6 @@ export class EventListenerService implements OnModuleInit, OnModuleDestroy {
         if (this.reconnectTimeout) {
             clearTimeout(this.reconnectTimeout);
         }
-        if (this.queueSubscription) {
-            this.queueSubscription.unsubscribe();
-        }
-        this.requestQueue.complete();
     }
 
     private startListening() {
@@ -179,11 +148,15 @@ export class EventListenerService implements OnModuleInit, OnModuleDestroy {
                         if (raffleId !== undefined && requestId !== undefined) {
                             this.logger.log(`Enqueueing RandomnessRequest: raffle=${raffleId}, request=${requestId}`);
                             this.lagMonitor.trackRequest(requestId, raffleId, eventResponse.ledger || 0);
-                            this.currentQueueDepth++;
-                            this.healthService.updateQueueDepth(this.currentQueueDepth);
-                            this.requestQueue.next({
+
+                            this.randomnessQueue.add({
                                 raffleId,
                                 requestId,
+                            }).then(() => {
+                                this.currentQueueDepth++;
+                                this.healthService.updateQueueDepth(this.currentQueueDepth);
+                            }).catch(err => {
+                                this.logger.error(`Failed to enqueue job for raffle ${raffleId}: ${err.message}`);
                             });
                         } else {
                             this.logger.warn(`Could not completely parse RandomnessRequested payload. Value: ${scVal.toXDR('base64')}`);
